@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>G検定 対策アプリ Pro</title>
+    <title>G検定 学習システム Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -13,112 +13,143 @@
             --bg-color: #f8f9fa;
         }
 
-        body { font-family: "Helvetica Neue", Arial, sans-serif; background: var(--bg-color); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        body { 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
+            background: var(--bg-color); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; color: #333;
+            -webkit-font-smoothing: antialiased;
+        }
 
-        .card { background: white; max-width: 600px; width: 100%; padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); box-sizing: border-box; margin-top: 10px; }
+        .card { 
+            background: white; max-width: 600px; width: 100%; padding: clamp(15px, 5vw, 25px); 
+            border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); box-sizing: border-box; margin-top: 10px;
+        }
 
-        /* 表紙（Dashboard） */
-        .app-title { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-item { background: #f1f3f4; padding: 15px; border-radius: 15px; text-align: center; }
+        /* --- 表紙ページ --- */
+        #home-page { text-align: center; }
+        .app-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; color: #222; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; margin-top: 20px; }
+        .stat-item { background: #f1f3f4; padding: 15px; border-radius: 15px; }
         .stat-label { font-size: 0.75rem; color: #666; display: block; }
         .stat-value { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); }
 
-        .menu-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 15px; font-size: 1rem; font-weight: bold; border: none; cursor: pointer; text-decoration: none; box-sizing: border-box; }
+        .menu-btn { 
+            display: flex; align-items: center; justify-content: center; width: 100%; 
+            padding: 16px; margin-bottom: 12px; border-radius: 15px; font-size: 1rem; 
+            font-weight: bold; border: none; cursor: pointer; transition: 0.2s;
+            text-decoration: none; box-sizing: border-box;
+        }
         .btn-main { background: var(--primary-color); color: white; }
         .btn-sub { background: white; border: 2px solid #eee; color: #444; }
         .btn-outline { background: #fff; border: 2px solid var(--primary-color); color: var(--primary-color); }
 
-        /* クイズ画面 */
+        /* --- クイズ画面 --- */
         #quiz-page { display: none; }
-        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 25px; line-height: 1.6; }
-        .opt-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: 1px solid #eee; border-radius: 12px; background: #fff; text-align: left; font-size: 1rem; cursor: pointer; }
-        .res-area { margin-top: 20px; padding: 20px; border-radius: 12px; display: none; line-height: 1.6; border-left: 6px solid; }
-        .correct { background: #f0fff4; border-color: var(--success-color); }
-        .wrong { background: #fff5f5; border-color: var(--danger-color); }
-        .ai-btn { display: flex; align-items: center; justify-content: center; margin-top: 15px; padding: 14px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
-
-        /* モーダル：成績表示 */
-        #chart-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; padding:15px; box-sizing:border-box; }
-        .chart-modal { background:white; padding:25px; border-radius:24px; width:100%; max-width:500px; max-height: 90vh; overflow-y: auto; text-align:center; box-sizing: border-box; }
+        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; }
+        .q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 25px; line-height: 1.6; word-wrap: break-word; }
+        .opt-btn { 
+            display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: 1px solid #eee; 
+            border-radius: 12px; background: #fff; text-align: left; font-size: 1rem; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .opt-btn:hover:not(:disabled) { background: #f1f7ff; border-color: var(--primary-color); }
         
-        /* 切り替えスイッチ */
-        .chart-toggle { display: flex; background: #eee; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
-        .toggle-item { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .toggle-item.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: var(--primary-color); }
+        .res-area { margin-top: 20px; padding: 20px; border-radius: 12px; display: none; line-height: 1.6; border-left: 6px solid; font-size: 0.95rem; }
+        .correct { background: #f0fff4; color: #22543d; border-color: var(--success-color); }
+        .wrong { background: #fff5f5; color: #822727; border-color: var(--danger-color); }
+        
+        .ai-btn { 
+            display: flex; align-items: center; justify-content: center; margin-top: 15px; 
+            padding: 14px; background: var(--primary-color); color: white; 
+            text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 0.9rem;
+        }
 
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .primary-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+        /* --- モーダル --- */
+        #chart-overlay { 
+            display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+            background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;
+        }
+        .chart-modal { 
+            background:white; padding:25px; border-radius:24px; width:100%; max-width:450px; 
+            max-height: 90vh; overflow-y: auto; text-align:center; box-sizing: border-box;
+        }
+        .chart-toggle { display: flex; background: #eee; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+        .toggle-item { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+        .toggle-item.active { background: white; color: var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .chart-container { position: relative; height: 280px; width: 100%; }
+        
+        @media screen and (max-width: 400px) {
+            .nav-header { flex-direction: column; align-items: stretch; }
+            .header-btns { display: flex; justify-content: space-between; gap: 5px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
     <div id="home-page">
-        <div class="app-title">G検定 学習システム</div>
+        <div class="app-title">G検定 対策 Pro</div>
         <div class="stat-grid">
-            <div class="stat-item"><span class="stat-label">進捗</span><span class="stat-value" id="stat-progress">0%</span></div>
-            <div class="stat-item"><span class="stat-label">正解率</span><span class="stat-value" id="stat-accuracy">0%</span></div>
+            <div class="stat-item"><span class="stat-label">全体進捗</span><span class="stat-value" id="stat-progress">0%</span></div>
+            <div class="stat-item"><span class="stat-label">平均正解率</span><span class="stat-value" id="stat-accuracy">0%</span></div>
         </div>
         <button onclick="startQuiz(true)" class="menu-btn btn-sub">最初から解く</button>
-        <button onclick="startQuiz(false)" class="menu-btn btn-main" id="continue-btn">前回の続きから</button>
-        <button onclick="toggleChart()" class="menu-btn btn-outline">成績を分析する</button>
-        <a href="https://www.jdla.org/certificate/general/" target="_blank" class="menu-btn" style="background:#e8f0fe; color:var(--primary-color); font-size:0.9rem;">試験情報を確認</a>
+        <button onclick="startQuiz(false)" class="menu-btn btn-main" id="continue-btn">学習を再開する</button>
+        <button onclick="toggleChart()" class="menu-btn btn-outline">成績を詳細分析</button>
+        <a href="https://www.jdla.org/certificate/general/" target="_blank" class="menu-btn" style="background:#e8f0fe; color:var(--primary-color); font-size:0.85rem;">試験最新情報を確認 (公式)</a>
     </div>
 
     <div id="quiz-page">
         <div class="nav-header">
-            <button onclick="goHome()" style="background:none; color:var(--primary-color); font-size:1.5rem; padding:0;">🏠</button>
-            <div style="font-weight:bold;">Q <span id="current-count">0</span> / <span id="total-count">0</span></div>
-            <button onclick="shuffleRemaining()" style="background:#f0f0f0; padding:8px; border-radius:8px;">🔀</button>
+            <button onclick="goHome()" style="background:none; border:1px solid #ddd; border-radius:8px; padding:5px 12px; cursor:pointer;">🏠 戻る</button>
+            <div style="font-weight:bold; color:#666;">Q <span id="current-count">0</span> / <span id="total-count">0</span></div>
+            <button onclick="shuffleRemaining()" style="background:#f0f0f0; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;">🔀 シャッフル</button>
         </div>
-        <select id="category-jump" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd;"></select>
-        <div id="display-id" style="font-size:0.8rem; color:var(--primary-color); font-weight:bold; margin-bottom:5px;"></div>
+        
+        <select id="category-jump" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #ddd; background:#fff; font-size:1rem;"></select>
+
+        <div id="display-id" style="font-size:0.75rem; color:var(--primary-color); font-weight:bold; margin-bottom:5px;"></div>
         <div id="display-text" class="q-text"></div>
         <div id="options-area"></div>
+        
         <div id="display-result" class="res-area"></div>
-        <button id="next-btn" class="primary-btn" style="display:none; background:#333; color:white; margin-top:10px;">次の問題へ</button>
+        <button id="next-btn" class="menu-btn btn-main" style="display:none; margin-top:15px;">次の問題へ</button>
     </div>
 </div>
 
 <div id="chart-overlay" onclick="toggleChart()">
     <div class="chart-modal" onclick="event.stopPropagation()">
-        <h3 style="margin-top:0; margin-bottom:15px;">学習状況分析</h3>
-        
+        <h3 style="margin-top:0;">学習状況分析</h3>
         <div class="chart-toggle">
-            <div id="toggle-total" class="toggle-item active" onclick="updateChartType('total')">全体の正解率</div>
+            <div id="toggle-total" class="toggle-item active" onclick="updateChartType('total')">全体</div>
             <div id="toggle-cat" class="toggle-item" onclick="updateChartType('category')">カテゴリ別</div>
         </div>
-
         <div class="chart-container">
             <canvas id="accuracyChart"></canvas>
         </div>
-
-        <div id="chart-detail-text" style="margin-top:15px; font-size:0.9rem; font-weight:bold; color:#555;"></div>
-        <button onclick="toggleChart()" class="primary-btn" style="background:#666; color:white; margin-top:20px;">閉じる</button>
+        <div id="chart-detail-text" style="margin-top:15px; font-weight:bold; color:#555;"></div>
+        <button onclick="toggleChart()" class="menu-btn" style="background:#666; color:white; margin-top:20px;">閉じる</button>
     </div>
 </div>
 
 <script>
-    const SAVE_KEY = 'g_kentei_v_pro_final';
+    const SAVE_KEY = 'g_kentei_v_pro_integrated';
     let rawData = [], activeQuizList = [], currentIdx = 0, correctCount = 0, answeredCount = 0;
-    let categoryStats = {}; // カテゴリごとの正解/回答数を記録
-    let chartViewMode = 'total'; 
-    let myChart = null;
+    let categoryStats = {}, chartViewMode = 'total', myChart = null;
 
-    fetch('quizData.json').then(res => res.json()).then(data => {
+    // データ読み込み（ファイル名は data.json に合わせています）
+    fetch('data.json').then(res => res.json()).then(data => {
         rawData = data; activeQuizList = [...data];
         initCategoryMenu();
         load();
         updateHomeStats();
+    }).catch(err => {
+        document.getElementById('display-text').innerText = "データの読み込みに失敗しました。data.json が正しい場所に配置されているか確認してください。";
     });
 
     function initCategoryMenu() {
         const select = document.getElementById('category-jump');
         select.innerHTML = '<option value="">▼ カテゴリから選ぶ</option>';
-        const cats = [...new Set(rawData.map(i => i.Category))];
-        cats.forEach(cat => {
+        [...new Set(rawData.map(i => i.Category))].forEach(cat => {
             const opt = document.createElement('option'); opt.value = cat; opt.innerText = cat; select.appendChild(opt);
         });
         select.onchange = (e) => { 
@@ -130,15 +161,15 @@
     }
 
     function updateHomeStats() {
-        const progress = Math.round((currentIdx / rawData.length) * 100);
+        const progress = Math.round((currentIdx / rawData.length) * 100) || 0;
         const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
         document.getElementById('stat-progress').innerText = progress + "%";
         document.getElementById('stat-accuracy').innerText = accuracy + "%";
-        document.getElementById('continue-btn').innerText = currentIdx > 0 ? `Q${currentIdx + 1}から再開` : "学習を開始する";
+        document.getElementById('continue-btn').innerText = currentIdx > 0 ? `Q${currentIdx + 1} から続きを解く` : "学習を開始する";
     }
 
     function startQuiz(reset) {
-        if(reset && confirm("記録をリセットしますか？")) {
+        if(reset && confirm("これまでの進捗をリセットして最初から始めますか？")) {
             currentIdx = 0; correctCount = 0; answeredCount = 0; categoryStats = {};
             activeQuizList = [...rawData]; save();
         }
@@ -152,7 +183,7 @@
 
     function show() {
         const item = activeQuizList[currentIdx];
-        if (!item) return goHome();
+        if (!item) { alert("このリストの全問題を解き終えました！"); return goHome(); }
         document.getElementById('current-count').innerText = currentIdx + 1;
         document.getElementById('display-id').innerText = `${item.ID} | ${item.Category}`;
         document.getElementById('display-text').innerText = item.Question;
@@ -170,22 +201,35 @@
         const res = document.getElementById('display-result');
         document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
 
-        // カテゴリ集計の初期化
         if (!categoryStats[item.Category]) categoryStats[item.Category] = { correct: 0, total: 0 };
         categoryStats[item.Category].total++;
         
+        const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
+        const userChoiceText = opts[idx];
+        const correctChoiceText = opts[item.Answer_Idx];
+
         if (isCorrect) {
             correctCount++;
             categoryStats[item.Category].correct++;
             res.className = 'res-area correct'; res.innerHTML = `<b>✨ 正解です！</b><br>${item.Explanation}`;
         } else {
             res.className = 'res-area wrong';
-            const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
-            res.innerHTML = `<b>❌ 不正解...</b> (正解: ${opts[item.Answer_Idx]})<br>${item.Explanation}`;
+            res.innerHTML = `<b>❌ 不正解...</b> (正解: ${correctChoiceText})<br>${item.Explanation}`;
         }
 
-        const prompt = `G検定の解説をして。\n問題:${item.Question}\n解説の要点:${item.Explanation}`;
-        res.innerHTML += `<a href="https://gemini.google.com/app?prompt=${encodeURIComponent(prompt)}" target="_blank" class="ai-btn">✨ Geminiに詳しく聞く</a>`;
+        // --- AI連携プロンプト生成 ---
+        const optionsList = opts.map((t, i) => `${i + 1}. ${t}`).join('\n');
+        const aiPrompt = `G検定の学習中です。以下の問題について詳しく解説してください。
+
+【問題】\n${item.Question}\n
+【選択肢】\n${optionsList}\n
+【私の回答】\n${userChoiceText} (${isCorrect ? '正解' : '不正解'})\n
+【正解】\n${correctChoiceText}\n
+【解説の要点】\n${item.Explanation}`;
+
+        res.innerHTML += `
+            <a href="https://gemini.google.com/app?prompt=${encodeURIComponent(aiPrompt)}" 
+               target="_blank" class="ai-btn">✨ Geminiにこの問題を詳しく聞く</a>`;
         
         answeredCount++;
         res.style.display = 'block'; document.getElementById('next-btn').style.display = 'block';
@@ -206,7 +250,7 @@
         if(myChart) myChart.destroy();
 
         if (chartViewMode === 'total') {
-            document.getElementById('chart-detail-text').innerText = `正解数: ${correctCount} / 解いた数: ${answeredCount}`;
+            document.getElementById('chart-detail-text').innerText = `正解数: ${correctCount} / 総回答数: ${answeredCount}`;
             myChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -216,23 +260,13 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
         } else {
-            // カテゴリ別横棒グラフ
             const labels = Object.keys(categoryStats);
             const data = labels.map(cat => Math.round((categoryStats[cat].correct / categoryStats[cat].total) * 100));
             document.getElementById('chart-detail-text').innerText = "各カテゴリの正解率(%)";
             myChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{ label: '正解率(%)', data: data, backgroundColor: '#1a73e8' }]
-                },
-                options: {
-                    indexAxis: 'y', // 横棒グラフにする
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { min: 0, max: 100 } },
-                    plugins: { legend: { display: false } }
-                }
+                data: { labels: labels, datasets: [{ label: '正解率(%)', data: data, backgroundColor: '#1a73e8' }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
             });
         }
     }
@@ -250,13 +284,17 @@
             const j=Math.floor(Math.random()*(i+1)); [rem[i], rem[j]]=[rem[j], rem[i]];
         }
         activeQuizList = done.concat(rem);
-        alert("残りの問題をシャッフルしました！"); show();
+        alert("残りの問題をランダムに並び替えました！"); show();
     }
 
-    function save() { localStorage.setItem(SAVE_KEY, JSON.stringify({ i: currentIdx, c: correctCount, a: answeredCount, cat: categoryStats })); }
+    function save() { localStorage.setItem(SAVE_KEY, JSON.stringify({ i: currentIdx, c: correctCount, a: answeredCount, cat: categoryStats, list: activeQuizList })); }
     function load() {
         const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-        if (s) { currentIdx = s.i; correctCount = s.c; answeredCount = s.a; categoryStats = s.cat || {}; }
+        if (s) { 
+            currentIdx = s.i; correctCount = s.c; answeredCount = s.a; 
+            categoryStats = s.cat || {}; 
+            if(s.list) activeQuizList = s.list;
+        }
     }
 </script>
 </body>
