@@ -24,7 +24,7 @@
             border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); box-sizing: border-box; margin-top: 10px;
         }
 
-        /* 表紙（Dashboard） */
+        /* 表紙 */
         #home-page { text-align: center; }
         .app-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; color: #222; }
         .data-status { font-size: 0.8rem; margin: 10px 0; padding: 5px; border-radius: 5px; }
@@ -64,20 +64,10 @@
             padding: 14px; background: #f8f9fa; color: #5f6368; border: 1px solid #dfe1e5;
             text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 0.9rem;
         }
-        .search-btn:hover { background: #f1f3f4; }
 
         /* モーダル */
-        #chart-overlay { 
-            display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-            background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;
-        }
-        .chart-modal { 
-            background:white; padding:25px; border-radius:24px; width:100%; max-width:450px; 
-            max-height: 90vh; overflow-y: auto; text-align:center; box-sizing: border-box;
-        }
-        .chart-toggle { display: flex; background: #eee; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
-        .toggle-item { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
-        .toggle-item.active { background: white; color: var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #chart-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; padding:15px; }
+        .chart-modal { background:white; padding:25px; border-radius:24px; width:100%; max-width:450px; text-align:center; }
         .chart-container { position: relative; height: 280px; width: 100%; }
     </style>
 </head>
@@ -93,13 +83,9 @@
             <div class="stat-item"><span class="stat-label">正解率</span><span class="stat-value" id="stat-accuracy">0%</span></div>
         </div>
 
-        <button onclick="startQuiz(true)" class="menu-btn btn-sub">↩️ 最初から解く</button>
+        <button onclick="startQuiz(true)" class="menu-btn btn-sub">↩️ 最初から解く（順不同）</button>
         <button onclick="startQuiz(false)" class="menu-btn btn-main" id="continue-btn">🚀 学習を開始する</button>
         <button onclick="toggleChart()" class="menu-btn btn-outline">📊 成績を詳細分析</button>
-        
-        <a href="https://www.jdla.org/certificate/general/" target="_blank" class="menu-btn" style="background:#e8f0fe; color:var(--primary-color); font-size:0.9rem;">
-            🌐 G検定 最新情報 (公式)
-        </a>
     </div>
 
     <div id="quiz-page">
@@ -108,13 +94,10 @@
             <div style="font-weight:bold; color:#666;">Q <span id="current-count">0</span> / <span id="total-count">0</span></div>
             <button onclick="shuffleRemaining()" style="background:#f0f0f0; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;">🔀</button>
         </div>
-        
         <select id="category-jump" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #ddd;"></select>
-
         <div id="display-id" style="font-size:0.75rem; color:var(--primary-color); font-weight:bold; margin-bottom:5px;"></div>
         <div id="display-text" class="q-text"></div>
         <div id="options-area"></div>
-        
         <div id="display-result" class="res-area"></div>
         <button id="next-btn" class="menu-btn btn-main" style="display:none; margin-top:15px;">次の問題へ</button>
     </div>
@@ -123,28 +106,19 @@
 <div id="chart-overlay" onclick="toggleChart()">
     <div class="chart-modal" onclick="event.stopPropagation()">
         <h3 style="margin-top:0;">学習状況分析</h3>
-        <div class="chart-toggle">
-            <div id="toggle-total" class="toggle-item active" onclick="updateChartType('total')">全体</div>
-            <div id="toggle-cat" class="toggle-item" onclick="updateChartType('category')">カテゴリ別</div>
-        </div>
-        <div class="chart-container">
-            <canvas id="accuracyChart"></canvas>
-        </div>
+        <canvas id="accuracyChart"></canvas>
         <div id="chart-detail-text" style="margin-top:15px; font-weight:bold; color:#555;"></div>
         <button onclick="toggleChart()" class="menu-btn" style="background:#666; color:white; margin-top:20px;">閉じる</button>
     </div>
 </div>
 
 <script>
-    const SAVE_KEY = 'g_kentei_v_pro_google';
+    const SAVE_KEY = 'g_kentei_v_pro_shuffle_opts';
     let rawData = [], activeQuizList = [], currentIdx = 0, correctCount = 0, answeredCount = 0;
-    let categoryStats = {}, chartViewMode = 'total', myChart = null;
+    let categoryStats = {}, myChart = null;
 
     fetch('quizData.json')
-        .then(res => {
-            if (!res.ok) throw new Error('Network error');
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
             rawData = data;
             activeQuizList = [...data];
@@ -154,16 +128,13 @@
             updateHomeStats();
         })
         .catch(err => {
-            const status = document.getElementById('data-status');
-            status.className = 'data-status status-error';
-            status.innerText = "⚠️ quizData.json が見つかりません。";
+            document.getElementById('data-status').innerText = "⚠️ quizData.json が見つかりません。";
         });
 
     function initCategoryMenu() {
         const select = document.getElementById('category-jump');
         select.innerHTML = '<option value="">▼ カテゴリから選ぶ</option>';
-        const cats = [...new Set(rawData.map(i => i.Category))];
-        cats.forEach(cat => {
+        [...new Set(rawData.map(i => i.Category))].forEach(cat => {
             const opt = document.createElement('option'); opt.value = cat; opt.innerText = cat; select.appendChild(opt);
         });
         select.onchange = (e) => { 
@@ -184,7 +155,7 @@
 
     function startQuiz(reset) {
         if(rawData.length === 0) return;
-        if(reset && confirm("進捗をリセットして最初から始めますか？")) {
+        if(reset && confirm("進捗をリセットしますか？")) {
             currentIdx = 0; correctCount = 0; answeredCount = 0; categoryStats = {};
             activeQuizList = [...rawData]; save();
         }
@@ -196,91 +167,89 @@
 
     function goHome() { updateHomeStats(); document.getElementById('home-page').style.display = 'block'; document.getElementById('quiz-page').style.display = 'none'; }
 
+    // ★今回の主要変更点：選択肢をシャッフルして表示する関数
     function show() {
         const item = activeQuizList[currentIdx];
         if (!item) return goHome();
+        
         document.getElementById('current-count').innerText = currentIdx + 1;
         document.getElementById('display-id').innerText = `${item.ID} | ${item.Category}`;
         document.getElementById('display-text').innerText = item.Question;
         document.getElementById('display-result').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
-        const area = document.getElementById('options-area'); area.innerHTML = '';
-        const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
-        opts.forEach((txt, idx) => {
-            const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = txt; b.onclick = () => check(idx, item); area.appendChild(b);
+        
+        const area = document.getElementById('options-area'); 
+        area.innerHTML = '';
+
+        // 1. 元の選択肢リストを作成
+        const originalOpts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
+        
+        // 2. 「テキスト」と「正解かどうか」をセットにしたオブジェクト配列を作る
+        let shuffleList = originalOpts.map((text, index) => {
+            return { text: text, isCorrect: (index === item.Answer_Idx) };
+        });
+
+        // 3. フィッシャー–イェーツのシャッフルで並び替え
+        for (let i = shuffleList.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffleList[i], shuffleList[j]] = [shuffleList[j], shuffleList[i]];
+        }
+
+        // 4. ボタンを生成して表示
+        shuffleList.forEach((optObj) => {
+            const b = document.createElement('button');
+            b.className = 'opt-btn';
+            b.innerText = optObj.text;
+            // クリック時に「その選択肢が正解だったか」を直接渡す
+            b.onclick = () => checkResult(optObj.isCorrect, optObj.text, item);
+            area.appendChild(b);
         });
     }
 
-    function check(idx, item) {
-        const isCorrect = (idx === item.Answer_Idx);
+    function checkResult(isCorrect, chosenText, item) {
         const res = document.getElementById('display-result');
         document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
 
+        // 正解のテキストを探しておく（解説表示用）
+        const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
+        const correctText = opts[item.Answer_Idx];
+
         if (!categoryStats[item.Category]) categoryStats[item.Category] = { correct: 0, total: 0 };
         categoryStats[item.Category].total++;
-        
-        const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
-        const correctChoiceText = opts[item.Answer_Idx];
 
         if (isCorrect) {
             correctCount++;
             categoryStats[item.Category].correct++;
-            res.className = 'res-area correct'; res.innerHTML = `<b>✨ 正解です！</b><br>${item.Explanation}`;
+            res.className = 'res-area correct';
+            res.innerHTML = `<b>✨ 正解です！</b><br>${item.Explanation}`;
         } else {
             res.className = 'res-area wrong';
-            res.innerHTML = `<b>❌ 不正解...</b> (正解: ${correctChoiceText})<br>${item.Explanation}`;
+            res.innerHTML = `<b>❌ 不正解...</b> (正解: ${correctText})<br>${item.Explanation}`;
         }
 
-        // --- Google検索クエリの生成 ---
-        // 問題文の最初の30文字 + 正解の単語 で検索
-        const searchQuery = `G検定 "${correctChoiceText}" ${item.Question.substring(0, 30)}`;
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
-
-        res.innerHTML += `
-            <a href="${searchUrl}" target="_blank" class="search-btn">
-                🔍 Googleで「${correctChoiceText}」を検索
-            </a>`;
+        const searchQuery = `G検定 "${correctText}" ${item.Question.substring(0, 30)}`;
+        res.innerHTML += `<a href="https://www.google.com/search?q=${encodeURIComponent(searchQuery)}" target="_blank" class="search-btn">🔍 Googleで「${correctText}」を検索</a>`;
         
         answeredCount++;
-        res.style.display = 'block'; document.getElementById('next-btn').style.display = 'block';
+        res.style.display = 'block'; 
+        document.getElementById('next-btn').style.display = 'block';
         save();
     }
 
     document.getElementById('next-btn').onclick = () => { currentIdx++; show(); };
 
-    function renderChart() {
-        const ctx = document.getElementById('accuracyChart').getContext('2d');
-        if(myChart) myChart.destroy();
-        if (chartViewMode === 'total') {
-            document.getElementById('chart-detail-text').innerText = `正解数: ${correctCount} / 総回答数: ${answeredCount}`;
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['正解', '不正解'], datasets: [{ data: [correctCount, answeredCount - correctCount], backgroundColor: ['#38a169', '#e53e3e'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        } else {
-            const labels = Object.keys(categoryStats);
-            const data = labels.map(cat => Math.round((categoryStats[cat].correct / categoryStats[cat].total) * 100));
-            document.getElementById('chart-detail-text').innerText = "各カテゴリの正解率(%)";
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: labels, datasets: [{ label: '正解率(%)', data: data, backgroundColor: '#1a73e8' }] },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
-            });
-        }
-    }
-
-    function updateChartType(type) {
-        chartViewMode = type;
-        document.getElementById('toggle-total').classList.toggle('active', type === 'total');
-        document.getElementById('toggle-cat').classList.toggle('active', type === 'category');
-        renderChart();
-    }
-
     function toggleChart() {
         const o = document.getElementById('chart-overlay');
         o.style.display = (o.style.display === 'flex') ? 'none' : 'flex';
-        if (o.style.display === 'flex') renderChart();
+        if (o.style.display === 'flex') {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            document.getElementById('chart-detail-text').innerText = `正解数: ${correctCount} / 回答数: ${answeredCount}`;
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['正解', '不正解'], datasets: [{ data: [correctCount, answeredCount - correctCount], backgroundColor: ['#38a169', '#e53e3e'] }] }
+            });
+        }
     }
 
     function shuffleRemaining() {
@@ -289,7 +258,7 @@
             const j=Math.floor(Math.random()*(i+1)); [rem[i], rem[j]]=[rem[j], rem[i]];
         }
         activeQuizList = activeQuizList.slice(0, currentIdx).concat(rem);
-        alert("シャッフルしました"); show();
+        alert("残りの問題をシャッフルしました"); show();
     }
 
     function save() { localStorage.setItem(SAVE_KEY, JSON.stringify({ i: currentIdx, c: correctCount, a: answeredCount, cat: categoryStats })); }
