@@ -82,7 +82,7 @@
             <div class="stat-item"><span class="stat-label">平均正解率</span><span class="stat-value" id="stat-accuracy">0%</span></div>
         </div>
 
-        <button onclick="startQuiz(true)" class="menu-btn btn-sub">↩️ 最初から解く（順不同）</button>
+        <button onclick="startQuiz(true)" class="menu-btn btn-sub">↩️ 最初から解く</button>
         <button onclick="startQuiz(false)" class="menu-btn btn-main" id="continue-btn">🚀 学習を再開する</button>
         <button onclick="toggleChart()" class="menu-btn btn-outline">📊 成績を詳細分析</button>
         
@@ -116,7 +116,7 @@
 </div>
 
 <script>
-    const SAVE_KEY = 'g_kentei_pro_v5';
+    const SAVE_KEY = 'g_kentei_pro_v6';
     let rawData = [], activeQuizList = [], currentIdx = 0, correctCount = 0, answeredCount = 0;
     let categoryStats = {}, myChart = null;
 
@@ -183,7 +183,7 @@
         const originalOpts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
         let shuffleList = originalOpts.map((text, index) => ({ text: text, isCorrect: (index === item.Answer_Idx) }));
 
-        // 選択肢をランダムシャッフル
+        // 選択肢シャッフルロジック
         for (let i = shuffleList.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffleList[i], shuffleList[j]] = [shuffleList[j], shuffleList[i]];
