@@ -59,11 +59,12 @@
         .correct { background: #f0fff4; color: #22543d; border-color: var(--success-color); }
         .wrong { background: #fff5f5; color: #822727; border-color: var(--danger-color); }
         
-        .ai-btn { 
+        .search-btn { 
             display: flex; align-items: center; justify-content: center; margin-top: 15px; 
-            padding: 14px; background: var(--primary-color); color: white; 
+            padding: 14px; background: #f8f9fa; color: #5f6368; border: 1px solid #dfe1e5;
             text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 0.9rem;
         }
+        .search-btn:hover { background: #f1f3f4; }
 
         /* モーダル */
         #chart-overlay { 
@@ -85,7 +86,7 @@
 <div class="card">
     <div id="home-page">
         <div class="app-title">G検定 学習アプリ Pro</div>
-        <div id="data-status" class="data-status status-loading">ファイルを読み込み中...</div>
+        <div id="data-status" class="data-status status-loading">quizData.json を読み込み中...</div>
         
         <div class="stat-grid">
             <div class="stat-item"><span class="stat-label">学習進捗</span><span class="stat-value" id="stat-progress">0%</span></div>
@@ -135,14 +136,13 @@
 </div>
 
 <script>
-    const SAVE_KEY = 'g_kentei_v_pro_v3';
+    const SAVE_KEY = 'g_kentei_v_pro_google';
     let rawData = [], activeQuizList = [], currentIdx = 0, correctCount = 0, answeredCount = 0;
     let categoryStats = {}, chartViewMode = 'total', myChart = null;
 
-    // ファイル名を quizData.json に統一
     fetch('quizData.json')
         .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
+            if (!res.ok) throw new Error('Network error');
             return res.json();
         })
         .then(data => {
@@ -156,8 +156,7 @@
         .catch(err => {
             const status = document.getElementById('data-status');
             status.className = 'data-status status-error';
-            status.innerText = "⚠️ quizData.json が読み込めません。ファイル名と場所を確認してください。";
-            console.error(err);
+            status.innerText = "⚠️ quizData.json が見つかりません。";
         });
 
     function initCategoryMenu() {
@@ -184,7 +183,7 @@
     }
 
     function startQuiz(reset) {
-        if(rawData.length === 0) return alert("データを読み込み中です。");
+        if(rawData.length === 0) return;
         if(reset && confirm("進捗をリセットして最初から始めますか？")) {
             currentIdx = 0; correctCount = 0; answeredCount = 0; categoryStats = {};
             activeQuizList = [...rawData]; save();
@@ -199,7 +198,7 @@
 
     function show() {
         const item = activeQuizList[currentIdx];
-        if (!item) { alert("完了！"); return goHome(); }
+        if (!item) return goHome();
         document.getElementById('current-count').innerText = currentIdx + 1;
         document.getElementById('display-id').innerText = `${item.ID} | ${item.Category}`;
         document.getElementById('display-text').innerText = item.Question;
@@ -221,7 +220,6 @@
         categoryStats[item.Category].total++;
         
         const opts = [item.Opt1, item.Opt2, item.Opt3, item.Opt4, item.Opt5, item.Opt6].filter(v => v);
-        const userChoiceText = opts[idx];
         const correctChoiceText = opts[item.Answer_Idx];
 
         if (isCorrect) {
@@ -233,11 +231,15 @@
             res.innerHTML = `<b>❌ 不正解...</b> (正解: ${correctChoiceText})<br>${item.Explanation}`;
         }
 
-        // --- AI連携プロンプト生成 ---
-        const optionsList = opts.map((t, i) => `${i + 1}. ${t}`).join('\n');
-        const aiPrompt = `G検定の学習中です。以下の問題について解説してください。\n\n【問題】\n${item.Question}\n\n【選択肢】\n${optionsList}\n\n【回答】\n${userChoiceText} (${isCorrect ? '正解' : '不正解'})\n\n【正解】\n${correctChoiceText}\n\n【解説】\n${item.Explanation}`;
+        // --- Google検索クエリの生成 ---
+        // 問題文の最初の30文字 + 正解の単語 で検索
+        const searchQuery = `G検定 "${correctChoiceText}" ${item.Question.substring(0, 30)}`;
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 
-        res.innerHTML += `<a href="https://gemini.google.com/app?prompt=${encodeURIComponent(aiPrompt)}" target="_blank" class="ai-btn">✨ Geminiに詳しく聞く</a>`;
+        res.innerHTML += `
+            <a href="${searchUrl}" target="_blank" class="search-btn">
+                🔍 Googleで「${correctChoiceText}」を検索
+            </a>`;
         
         answeredCount++;
         res.style.display = 'block'; document.getElementById('next-btn').style.display = 'block';
@@ -287,7 +289,7 @@
             const j=Math.floor(Math.random()*(i+1)); [rem[i], rem[j]]=[rem[j], rem[i]];
         }
         activeQuizList = activeQuizList.slice(0, currentIdx).concat(rem);
-        alert("残りの問題をシャッフルしました！"); show();
+        alert("シャッフルしました"); show();
     }
 
     function save() { localStorage.setItem(SAVE_KEY, JSON.stringify({ i: currentIdx, c: correctCount, a: answeredCount, cat: categoryStats })); }
